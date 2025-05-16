@@ -1,6 +1,10 @@
 # Define the database schema and user inputs
 DATABASE_FORMAT = "CPU,RAM,Storage,GPU,OS,Weight,Screen Size,Screen Resolution,Brand"
 
+PROMPT = f"""You are a laptop recommendation system. Your task is to provide laptop recommendations based on user needs and budget.
+Your output should consist of only a CSV-formatted string and nothing else.
+Here is the format of the database: {DATABASE_FORMAT}"""
+
 USER_INPUTS = [
     "I am a computer science student looking for a laptop that can handle programming tasks, data analysis, and some light gaming and have a budget of $1500. I don't care that much about the weight.",
     "I have a budget of $2000 and I am a graphic designer looking for a laptop that can handle heavy graphics work, video editing, and 3D rendering.",
