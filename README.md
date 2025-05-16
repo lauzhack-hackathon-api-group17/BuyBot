@@ -2,4 +2,4 @@
 
 
 Structure du csv pour les laptops:
-Category   Display CPU	RAM	Storage	GPU	OS	Weight	Price
+Brand Model Category Display CPU RAM Storage GPU OS	Weight	Price, Link
