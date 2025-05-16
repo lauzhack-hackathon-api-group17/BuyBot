@@ -26,10 +26,10 @@ def get_laptop_recommendations(user_input: str) -> str:
 
     # 4. Call the Together AI chat completion endpoint
     response = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+        model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
         messages=messages,
-        max_tokens=1024,
-        temperature=0.7,
+        max_tokens=2048,
+        temperature=0.2,
     )
 
     # 5. Extract and return the content
@@ -70,3 +70,5 @@ def main():
     create_database(recommendations)
     
     return recommendations
+
+main()
