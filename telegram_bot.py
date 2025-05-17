@@ -102,12 +102,15 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
         print(f"Received input from user {user_id}: {input_text}")
 
     try:
+        # Tell the user his profile is being processed
+        await update.message.reply_text("🔄 Forming your user profile ...")
         # Generate specs database from input text
         specs_database = create_specs_database(input_text)
 
         if DEBUG:
             print(f"Generated specs database: {specs_database}")
 
+        await update.message.reply_text("🔄 Affining search ...")
         # Filter results
         filtered_laptops = SDI.sql_database_interface(Categories.LAPTOPS).filter_database()
 
@@ -118,6 +121,7 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text("⚠️ No suitable laptops found after filtering.")
             return
 
+        await update.message.reply_text("🔄 Formatting response ...")
         # Format using LLM
         formatted = query_llm(input_text, filtered_laptops, user_id)
 
