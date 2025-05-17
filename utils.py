@@ -1,3 +1,5 @@
+import os
+import csv
 from scipy.optimize import direct
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -113,3 +115,17 @@ def one_sublist_of_another(list1: list, list2: list) -> float:
                 continue
 
     return True
+
+# Load the components possibilities from CSV files
+def get_possibilities():
+    """Load the possible values for each component from CSV files in the specified directory."""
+    possibilities = {}
+    directory = 'scraped_lists/LAPTOPS'
+    for filename in os.listdir(directory):
+        if filename.endswith('.csv'):
+            key = filename[:-4]  # remove .csv
+            with open(os.path.join(directory, filename), newline='', encoding='utf-8') as csvfile:
+                reader = csv.reader(csvfile)
+                # flatten all rows into a single list
+                values = [item for row in reader for item in row if item]
+                possibilities[key] = values

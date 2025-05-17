@@ -7,44 +7,44 @@ Your output should consist of only a CSV-formatted string and nothing else.
 Here is the format of the database: Brand,Model,Category,Display,CPU,RAM,Storage,GPU,OS,Weight"""
 
 USER_INPUTS = [
-    "As a freelance graphic designer on a tight budget, I'm looking for a laptop that can handle demanding design software within my budget of $800 for primary use in creating visual content.",
-    "I'm a college student who needs a reliable laptop for taking notes and streaming videos in class, and I'm willing to spend up to $500 for a device that can keep up with my daily academic tasks.",
-    "Since I'm an avid gamer and streamer, I require a high-performance laptop that can support 4K resolution and fast refresh rates, and I'm prepared to invest up to $1,200 to get the best possible gaming experience.",
+    'Here are three distinct user queries for a laptop recommendation system:',
+    "As a college student on a tight budget, I'm looking for a laptop that can handle basic tasks like browsing, word processing, and streaming for under 500CHF.",
+    "As a college student on a tight budget, I'm looking for a laptop that can handle basic tasks like browsing, word processing, and streaming for under 500CHF.",
 ]
 
 # LLM outputs as plain CSV strings per user
 LLM_OUTPUTS = [
-    """Dell,Inspiron 15 5000,Budget Laptop,15.6,Intel Core i5-1235U,8,512,Intel Iris Xe,Windows 11,1.85
-HP,Envy x360,Budget Convertible,15.6,AMD Ryzen 5 7530U,8,512,AMD Radeon 760M,Windows 11,2.11
-Lenovo,IdeaPad 3,Budget Laptop,14,Intel Core i3-1215U,8,256,Intel UHD Graphics,Windows 11,1.63
-Asus,Vivobook 15,Budget Laptop,15.6,Intel Core i3-1215U,8,512,Intel Iris Xe,Windows 11,1.8
-Acer,Aspire 5,Budget Laptop,15.6,Intel Core i5-1235U,8,512,Intel Iris Xe,Windows 11,1.95
-MSI,PS65,Budget Creator Laptop,15.6,Intel Core i5-1235U,8,512,NVIDIA GeForce MX450,Windows 11,1.88
-Microsoft,Surface Laptop Go,Budget Ultrabook,12.4,Intel Core i5-1235U,8,256,Intel Iris Xe,Windows 11,1.09
-LG,Gram 14,Budget Ultrabook,14,Intel Core i3-1215U,8,256,Intel Iris Xe,Windows 11,0.99
-Samsung,Galaxy Book2,Budget Laptop,15.6,Intel Core i3-1215U,8,256,Intel UHD Graphics,Windows 11,1.55
-Gigabyte,G5,Budget Gaming Laptop,15.6,AMD Ryzen 5 7530U,8,512,AMD Radeon 760M,Windows 11,2.08""",
+    """Dell,XPS 15,Workstation,15.6,Intel Core i7-13700H,16,512, NVIDIA GeForce RTX 4060,Windows 11,1.85
+HP,Envy 16,Creator,16,Intel Core i7-1360P,16,1TB,NVIDIA GeForce RTX 4050,Windows 11,2.05
+Lenovo,ThinkPad P53,Workstation,15.6,Intel Core i9-13900H,32,2TB,NVIDIA Quadro RTX 4000,Windows 11,2.45
+Asus,Vivobook Pro 15,Creator,15.6,AMD Ryzen 9 7940HS,16,512,NVIDIA GeForce RTX 4060,Windows 11,1.65
+MSI,PS65,Workstation,15.6,Intel Core i7-13700H,16,1TB,NVIDIA GeForce RTX 4070,Windows 11,1.88
+Acer,ConceptD 7,Creator,15.6,Intel Core i7-1380P,16,1TB,NVIDIA GeForce RTX 4050,Windows 11,2.1
+Razer,Blade 15,Workstation,15.6,Intel Core i9-13900H,32,2TB,NVIDIA GeForce RTX 4080,Windows 11,2.15
+Microsoft,Surface Laptop Studio,Creator,14.4,Intel Core i7-1360P,16,512,NVIDIA GeForce RTX 4050,Windows 11,1.74
+Gigabyte,Aero 15,Workstation,15.6,Intel Core i7-13700H,16,1TB,NVIDIA GeForce RTX 4070,Windows 11,1.95
+Apple,MacBook Pro 16,Creator,16,Apple M2 Pro,16,1TB,Apple M2 Pro,macOS,1.95""",
 
-    """Acer,Aspire 3,Affordable,14,Intel Core i3-1215U,8,256,Intel Iris Xe,Windows 11,1.9
-Lenovo,IdeaPad 3,Budget,15.6,AMD Ryzen 3 7320U,8,512,AMD Radeon 610M,Windows 11,2.2
-HP,Envy x360,Budget 2-in-1,15.6,AMD Ryzen 5 7520U,8,256,AMD Radeon 610M,Windows 11,2.1
-Asus,Vivobook X513FA,Affordable,15.6,Intel Core i3-1005G1,8,512,Intel UHD 630,Windows 11,1.8
-Dell,Inspiron 15 5000,Budget,15.6,Intel Core i3-1215U,8,256,Intel Iris Xe,Windows 11,2.0
-Microsoft,Surface Laptop Go,Budget Ultrabook,12.4,Intel Core i3-1005G1,8,128,Intel UHD 630,Windows 11,1.1
-LG,gram 14,Budget Ultrabook,14,Intel Core i3-1215U,8,256,Intel Iris Xe,Windows 11,1.0
-Samsung,Galaxy Book2,Budget 2-in-1,13.3,Intel Core i3-1005G1,8,256,Intel UHD 630,Windows 11,1.3
-Acer,Swift 3,Affordable,14,AMD Ryzen 3 7320U,8,512,AMD Radeon 610M,Windows 11,1.2
-Lenovo,Chromebook 3,Chromebook,14,Mediatek MT8183,4,64,Mediatek MT8183,Chrome OS,1.5""",
+    """Acer,Aspire 3,Budget,14,Intel Celeron N4020,4,128,Intel UHD 630,Windows 10,1.9
+Lenovo,IdeaPad 1,Budget,14,AMD Ryzen 3 3250U,4,256,AMD Radeon Graphics,Windows 11,1.8
+HP,Envy x360,Budget,15.6,AMD Ryzen 3 3250U,8,256,AMD Radeon Graphics,Windows 11,2.1
+Asus,Vivobook X512FA,Budget,15.6,Intel Core i3-1005G1,4,256,Intel UHD 630,Windows 10,1.8
+Dell,Inspiron 15 3000,Budget,15.6,Intel Celeron N4020,4,128,Intel UHD 630,Windows 10,2.2
+Microsoft,Surface Laptop Go,Budget,12.4,Intel Core i3-1005G1,4,128,Intel UHD 630,Windows 11,1.1
+Acer,Swift 1,Budget,14,Intel Pentium Silver N5030,4,64,Intel UHD 605,Windows 10,1.3
+Lenovo,ThinkPad E15,Budget,15.6,AMD Ryzen 3 3250U,8,256,AMD Radeon Graphics,Windows 11,2.3
+HP,Pavilion Gaming 15,Budget,15.6,AMD Ryzen 3 3250U,8,512,AMD Radeon Graphics,Windows 11,2.4
+Asus,Chromebook C523NA,Chromebook,15.6,Intel Pentium Silver N5030,4,32,Intel UHD 605,Chrome OS,1.9""",
 
-    """Dell,Alienware M15,Razer Blade 15 Alternative,15.6,Intel Core i7-13700H,16,512,NVIDIA RTX 4060,Windows 11,2.5
-MSI,GS66 Stealth,Gaming Laptop,15.6,Intel Core i7-13620H,16,1TB,NVIDIA RTX 4060,Windows 11,2.1
-Asus,ROG Zephyrus G15,Gaming Laptop,15.6,AMD Ryzen 9 7940HS,16,512,NVIDIA RTX 4070,Windows 11,2.0
-Razer,Blade 15,Gaming Laptop,15.6,Intel Core i7-13850HX,16,1TB,NVIDIA RTX 4070,Windows 11,2.2
-Acer,Predator Helios 300,Gaming Laptop,15.6,Intel Core i7-13700H,16,512,NVIDIA RTX 4060,Windows 11,2.7
-Gigabyte,Aorus 15,Gaming Laptop,15.6,Intel Core i7-13620H,16,1TB,NVIDIA RTX 4060,Windows 11,2.3
-Lenovo,Legion 5 Pro,Gaming Laptop,16,AMD Ryzen 7 7840U,16,512,NVIDIA RTX 4060,Windows 11,2.6
-HP,Omen 15,Gaming Laptop,15.6,Intel Core i7-13700H,16,1TB,NVIDIA RTX 4070,Windows 11,2.4
-Microsoft,Surface Laptop Studio,Gaming Laptop,15.6,Intel Core i7-13850HX,16,1TB,NVIDIA RTX 4050,Windows 11,1.9
-Samsung,Galaxy Book Odyssey,Gaming Laptop,15.6,Intel Core i7-13620H,16,512,NVIDIA RTX 4060,Windows 11,2.2""",
+    """Acer,Aspire 3,Budget,15.6,Intel Core i3-1005G1,8,256,Intel Iris Xe,Windows 10,1.9
+Lenovo,IdeaPad 330S,Budget,14,Intel Core i3-10110U,8,512,Intel UHD 620,Windows 10,1.5
+HP,Envy x360,Budget,15.6,AMD Ryzen 3 3200U,8,256,Radeon Vega 3,Windows 10,2.1
+Asus,Vivobook X512FA,Budget,15.6,Intel Core i3-1005G1,8,256,Intel UHD 630,Windows 10,1.8
+Dell,Inspiron 15 3000,Budget,15.6,Intel Core i3-1005G1,8,256,Intel UHD 630,Windows 10,2.2
+Microsoft,Surface Laptop Go,Budget,12.4,Intel Core i3-1005G1,8,128,Intel UHD 630,Windows 10,1.1
+Acer,Swift 3,Budget,14,AMD Ryzen 3 3200U,8,256,Radeon Vega 3,Windows 10,!6
+HP,Pavilion Gaming 15,Budget,15.6,AMD Ryzen 3 3200U,8,512,Radeon RX 5500M,Windows 10,2.3
+Lenovo,ThinkPad E15,Budget,15.6,Intel Core i3-10110U,8,256,Intel UHD 620,Windows 10,1.9
+Asus,Chromebook C523NA,Budget,15.6,Intel Pentium Silver N5000,4,64,Intel UHD 605,Chrome OS,1.8""",
 
 ]

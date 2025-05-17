@@ -1,9 +1,12 @@
-import os
+import time
 from together import Together
 from keys import TOGETHER_AI  # or replace with your API key
 from data_categories_entries.data_categories import Categories
+from utils import get_possibilities
 
 client = Together(api_key=TOGETHER_AI)
+
+MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 
 # --- CONFIGURABLE ATTRIBUTES ---
 # Only take the n-2 first elements of the header to exclude price and link
@@ -20,7 +23,8 @@ Here is the format of the database: {DATABASE_FORMAT}"""
 # --- INSTRUCTION TEMPLATES ---
 USER_GEN_INSTRUCTION = (
     f"Generate exactly {N_QUERIES} distinct user queries for a laptop recommendation system. "
-    "Each query must be a single sentence, mention a clear budget (e.g., '$500'), and describe a primary use case. "
+    "Each query must be a single sentence, for some queries mention a clear budget (e.g., '500CHF', '2500CHF') but some other times don't. "
+    "The queries should cover a range of user needs, such as gaming, business, travel, and education etc... "
     "Ensure each query is unique and realistic, with varied user personas."
 )
 
@@ -30,36 +34,39 @@ RECOMMENDATION_INSTRUCTION_TEMPLATE = (
     f"Based on the user's needs and budget, provide exactly {N_RECOMMENDATIONS} laptop recommendations in strict CSV format. "
     f"Ensure each row has exactly the following fields in order: {DATABASE_FORMAT}.\n\n"
     "Important requirements:\n"
-    "1. Each recommendation must be REALISTIC with current market specifications and models as of 2024.\n"
-    "2. Create HIGH DIVERSITY across all recommendations - vary brands, models, categories, CPUs, etc.\n"
-    "3. Match specifications accurately to real-world laptop segments and price points.\n"
+    f"1. For some components/specifications, you can only use the values from these lists: {get_possibilities()}.\n"
+    f"2. Each recommendation must be REALISTIC with your market estimation from current date: {time.strftime('%Y-%m-%d')} and the components you can use.\n"
+    "3. Create HIGH DIVERSITY across all recommendations - vary brands, models, categories, CPUs, etc.\n"
     "4. Scale specs appropriately to user's budget and needs (higher budget = better specs).\n"
-    "5. Include diverse brands: Dell, HP, Lenovo, Apple, Asus, MSI, Acer, Microsoft, LG, Samsung, Razer, Gigabyte, etc.\n"
-    "6. Use accurate CPU naming conventions like 'Intel Core i7-13700H', 'AMD Ryzen 7 7840U', 'Apple M3 Pro', etc.\n"
-    "7. Include realistic GPU options from 'Intel Iris Xe', 'AMD Radeon 780M' to 'NVIDIA RTX 4070' depending on budget.\n"
-    "8. Provide varied storage options from 256GB to 2TB based on price point.\n"
-    "9. Ensure each recommendation is unique - NO duplicated models or specs except when absolutely unavoidable.\n"
-    "10. Express display sizes in inches and weights in kg WITHOUT explicitly formatting units in the CSV (e.g., use only the numeric value)."
+    "5. Provide varied storage options based on price point and user needs. (e.g Video/Photo = More Storage, Buisness = Less Storage)\n"
+    "6. Ensure each recommendation is unique - NO duplicated models or specs except when absolutely unavoidable.\n"
+    "7. Express display sizes in inches and weights in kg WITHOUT explicitly formatting units in the CSV (e.g., use only the numeric value)."
+    "8. More importantly, take into account the typical user's profile to ensure the recommendations are suitable for their needs.\n"
 )
 
 # --- FUNCTIONAL STEPS ---
 def generate_user_inputs():
     response = client.chat.completions.create(
-        model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        model=MODEL,
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": USER_GEN_INSTRUCTION}
         ],
-        max_tokens=min(256 * N_QUERIES, 2048),
+        max_tokens=min(512 * N_QUERIES, 2048),
         temperature=0.7,
     )
     lines = response.choices[0].message.content.strip().splitlines()
     queries: list[str] = []
+    budgets_needed_left = N_QUERIES // 2
     for line in lines:
         clean = line.strip().lstrip("-•1234567890. ").strip('"')
-        # Skip any line that doesn't include a dollar budget
-        if '$' not in clean:
-            continue
+        # Ensure some queries have a budget and some do not
+        if "CHF" in clean:
+            if budgets_needed_left > 0:
+                queries.append(clean)
+                budgets_needed_left -= 1
+            else:
+                continue
         if clean:
             queries.append(clean)
         if len(queries) == N_QUERIES:
@@ -88,7 +95,7 @@ def generate_llm_outputs(user_inputs: list[str]) -> list[str]:
         ]
         
         response = client.chat.completions.create(
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            model=MODEL,
             messages=messages,
             max_tokens=min(256 * N_RECOMMENDATIONS, 4096),  # Increased token limit
             temperature=0.5,  # Balanced temperature for creativity and accuracy
