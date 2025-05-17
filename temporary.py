@@ -32,7 +32,7 @@ DESIRED_SPECS = [
 CSV_HEADERS = ["Brand", "Model", "Category", "Display", "CPU", "RAM", "Storage", "GPU", "OS", "Weight", "Price", "Link"]
 
 # Create or open the CSV file
-csv_filename = f"laptops_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+csv_filename = f"laptops_data_from230_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # Setup Chrome options
 chrome_options = Options()
@@ -74,145 +74,165 @@ def clean_model_name(model_name):
     return model_name
 
 def extract_specs_from_detail_page(driver, product_url):
-    """
-    Extract laptop specifications using a hybrid approach that prioritizes speed and reliability.
-    """
     # Initialize dictionary with all desired specs set to None
     extracted_specs = {spec: None for spec in DESIRED_SPECS}
     
     try:
-        # Use a shorter wait time but still sufficient for page loading
-        wait = WebDriverWait(driver, 7)
+        # Wait for the page to load properly with explicit wait
+        wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ypBxcVsA")))
         
-        # Try to expand specifications - this is important for reliability
+        # Try to find and click any "Show more specs" button
         try:
-            show_more_button = driver.find_element(By.CSS_SELECTOR, "button[aria-controls^='«r']")
-            if "Afficher" in show_more_button.text:
-                driver.execute_script("arguments[0].click();", show_more_button)
-                # Short wait for expansion
-                sleep(1)
-        except:
-            # Continue even if button not found
-            pass
+            show_more_buttons = driver.find_elements(By.XPATH, "//button[contains(@class, 'yqCAcxE')]")
+            for button in show_more_buttons:
+                if "Afficher plus" in button.text or "Afficher" in button.text:
+                    driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                    driver.execute_script("arguments[0].click();", button)
+                    print("Clicked 'Show more specifications' button")
+                    sleep(2)  # Wait for expanded content to load
+        except Exception as e:
+            print(f"Note: Could not find or click show more button: {e}")
         
-        # Efficient scroll - just enough to load content
-        driver.execute_script("window.scrollTo(0, 600)")
-        sleep(0.3)
+        # Scroll through page to ensure all content is loaded
+        for scroll_position in [300, 600, 900, 1200, 1500]:
+            driver.execute_script(f"window.scrollTo(0, {scroll_position})")
+            sleep(0.5)
         
-        # Extract product name (fast)
-        try:
-            raw_model = driver.title.split('|')[0].strip() 
-            model = clean_model_name(raw_model)
-            print(f"Product: {model}")
-        except:
-            model = "Unknown Model"
+        # Scroll back to top
+        driver.execute_script("window.scrollTo(0, 0)")
+        sleep(1)
         
-        # Fast direct extraction of brand
+        # Get the page source after all interactions
+        page_source = driver.page_source
+        
+        # Extract product name
+        raw_model = driver.title.split('|')[0].strip() if '|' in driver.title else driver.title.strip()
+        # Clean the model name to remove unwanted text
+        model = clean_model_name(raw_model)
+        print(f"Product: {model}")
+        
+        # Extract brand
         brand = None
-        try:
-            # Target specific XPath for brand
-            brand_elements = driver.find_elements(By.XPATH, "//div[text()='Fabricant']/../../following-sibling::td//a")
-            if brand_elements:
-                brand = brand_elements[0].text.strip()
-                print(f"Found Brand: {brand}")
-        except:
-            # Continue if brand not found this way
-            pass
+        # Try multiple patterns for brand extraction
+        brand_patterns = [
+            '<div class="ywIf8Ay">Fabricant</div></td><td.*?><a.*?>(.*?)</a>',
+            '<a class="yRfMIL6 yRfMIL66" href="/fr/brand/.*?">(.*?)</a>'
+        ]
         
-        # If brand still not found, extract from model name
+        for pattern in brand_patterns:
+            brand_match = re.search(pattern, page_source, re.DOTALL)
+            if brand_match:
+                brand = brand_match.group(1).strip()
+                print(f"Found Brand: {brand}")
+                break
+        
+        # If brand still not found, try to extract from model name
         if not brand and model:
-            common_brands = ["HP", "Dell", "Lenovo", "Asus", "Acer", "Apple", "MSI", 
-                            "Samsung", "Huawei", "Microsoft", "LG"]
+            common_brands = ["HP", "Dell", "Lenovo", "Asus", "Acer", "Apple", "MSI", "Samsung", "Huawei", "Microsoft"]
             for b in common_brands:
                 if model.lower().startswith(b.lower()):
                     brand = b
                     print(f"Extracted Brand from model name: {brand}")
                     break
         
-        # PRIMARY EXTRACTION METHOD: Direct element access - most reliable and reasonably fast
-        # Get all specification tables - this is very reliable
-        spec_tables = driver.find_elements(By.CLASS_NAME, "yxKaXMd")
+        # More flexible patterns for different HTML structures
+        patterns = {
+            # Pattern 1: Standard text in span
+            1: r'<div class="ywIf8Ay">{spec}.*?</div></td><td.*?><span>([^<]+)',
+            # Pattern 2: Text in double nested spans
+            2: r'<div class="ywIf8Ay">{spec}.*?</div></td><td.*?><div class="yQqusFs1"><span class="yQqusFs"><span>([^<]+)',
+            # Pattern 3: Text without any span (directly in td)
+            3: r'<div class="ywIf8Ay">{spec}.*?</div></td><td[^>]*>([^<\s][^<]*)',
+            # Pattern 4: Text in link
+            4: r'<div class="ywIf8Ay">{spec}.*?</div></td><td.*?><a[^>]*>([^<]+)',
+        }
         
-        for table in spec_tables:
-            rows = table.find_elements(By.TAG_NAME, "tr")
+        # Manual extraction from the page source
+        for spec in DESIRED_SPECS:
+            # Try each pattern until we find a match
+            for pattern_key, pattern_template in patterns.items():
+                pattern = pattern_template.format(spec=re.escape(spec))
+                match = re.search(pattern, page_source, re.DOTALL)
+                
+                if match:
+                    value = match.group(1).strip()
+                    # Clean up non-breaking spaces and other special characters
+                    value = value.replace('&nbsp;', ' ')
+                    extracted_specs[spec] = value
+                    print(f"Found {spec}: {value} (Pattern {pattern_key})")
+                    break
+        
+        # If regex approach didn't find enough specs, try direct element extraction
+        if sum(1 for value in extracted_specs.values() if value) <= 3:
+            print("Few specs found with regex, trying direct element approach...")
             
-            for row in rows:
-                try:
-                    # Find cells
+            # Get all specification tables
+            spec_tables = driver.find_elements(By.CLASS_NAME, "yxKaXMd")
+            
+            for table in spec_tables:
+                rows = table.find_elements(By.TAG_NAME, "tr")
+                
+                for row in rows:
                     cells = row.find_elements(By.TAG_NAME, "td")
                     if len(cells) >= 2:
-                        # Get spec name efficiently
-                        spec_elem = cells[0].find_element(By.CLASS_NAME, "ywIf8Ay")
-                        spec_name = spec_elem.text.strip()
-                        
-                        # Only process specs we care about - saves time
-                        if spec_name in DESIRED_SPECS:
-                            # Get value from second cell
+                        try:
+                            # Get spec name from first cell
+                            spec_elem = cells[0].find_element(By.CLASS_NAME, "ywIf8Ay")
+                            spec_name = spec_elem.text.strip()
+                            
+                            # Get spec value from second cell
                             value = cells[1].text.strip()
                             
-                            # Clean value (remove info button indicator)
-                            value = re.sub(r'\s*i\s*$', '', value)
-                            
-                            # Save spec
-                            extracted_specs[spec_name] = value
-                            print(f"Found {spec_name}: {value}")
-                except:
-                    # Skip problematic rows
-                    continue
+                            # Check if it's one of our desired specs
+                            if spec_name in DESIRED_SPECS and not extracted_specs[spec_name]:
+                                extracted_specs[spec_name] = value
+                                print(f"Found {spec_name}: {value} (Direct element)")
+                        except:
+                            continue
         
-        # SECONDARY METHOD: For specs still missing, use optimized direct lookup
-        missing_specs = [spec for spec in DESIRED_SPECS if extracted_specs[spec] is None]
-        if missing_specs:
-            print(f"Still missing: {missing_specs}")
-            
-            for spec in missing_specs:
-                try:
-                    # Efficient direct XPath for each missing spec
-                    xpath = f"//div[contains(text(),'{spec}')]/../../following-sibling::td"
-                    spec_value_cells = driver.find_elements(By.XPATH, xpath)
-                    
-                    if spec_value_cells:
-                        value = spec_value_cells[0].text.strip()
-                        value = re.sub(r'\s*i\s*$', '', value)
-                        extracted_specs[spec] = value
-                        print(f"Found {spec} (secondary): {value}")
-                except:
-                    # Continue if this spec can't be found
-                    continue
-        
-        # Get price efficiently
+        # Get the price using multiple methods
         price = None
-        try:
-            # Try the most common price selectors
-            selectors = [
-                "button.yKEoTuX6", 
-                "span.yXGq3V4", 
-                "div.yXGq3V4",
-                "div.yPLxjm2z"
-            ]
-            
-            for selector in selectors:
-                price_elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                if price_elements:
-                    price_text = price_elements[0].text.strip()
-                    if "CHF" in price_text or ".-" in price_text:
-                        price = price_text
-                        # Ensure price starts with CHF
-                        if not price.startswith("CHF"):
-                            price = f"CHF {price}"
-                        print(f"Price: {price}")
-                        break
-        except:
-            # Continue without price if not found
-            pass
+        # Method 1: Regex pattern
+        price_patterns = [
+            'class="yKEoTuX6"><span.*?>.*?</span>(.*?)</button>',
+            'class="yXGq3V4">[^\d]*(\d+\.–)',
+            'yXGq3V4">\s*CHF\s*(\d+\.–)'
+        ]
         
-        # Map extracted specs to CSV format
+        for pattern in price_patterns:
+            price_match = re.search(pattern, page_source, re.DOTALL)
+            if price_match:
+                price = f"CHF {price_match.group(1).strip()}"
+                print(f"Prix: {price}")
+                break
+        
+        # Method 2: Direct element approach if regex failed
+        if not price:
+            try:
+                price_element = driver.find_element(By.CSS_SELECTOR, "button.yKEoTuX6, span.yXGq3V4")
+                price = price_element.text.strip()
+                print(f"Prix (direct element): {price}")
+            except:
+                print("Could not find price element")
+        
+        # Print the summary for this laptop
+        print("\n=== Spécifications du portable ===")
+        for spec_name, spec_value in extracted_specs.items():
+            if spec_value:
+                print(f"{spec_name}: {spec_value}")
+        if price:
+            print(f"Prix: {price}")
+        
+        total_found = sum(1 for value in extracted_specs.values() if value) + (1 if price else 0)
+        print(f"Total specifications found: {total_found}")
+        print("===============================")
+        
+        # Map the extracted specs to the CSV format
         taille_ecran = extracted_specs.get("Taille de l'écran", "")
         definition_ecran = extracted_specs.get("Définition de l'écran", "")
         display = f"{taille_ecran} {definition_ecran}".strip()
         
-        # Prepare CSV data
         csv_data = {
             "Brand": brand if brand else "",
             "Model": model if model else "",
@@ -228,7 +248,7 @@ def extract_specs_from_detail_page(driver, product_url):
             "Link": product_url
         }
         
-        # Save to CSV efficiently
+        # Save to CSV
         with open(csv_filename, 'a', newline='', encoding='utf-8') as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerow([
@@ -246,119 +266,177 @@ def extract_specs_from_detail_page(driver, product_url):
                 csv_data["Link"]
             ])
         
-        # Minimal logging
-        total_found = sum(1 for value in extracted_specs.values() if value)
-        print(f"Extracted {total_found} specs for {model}")
+        print(f"Data saved to {csv_filename}")
         
     except Exception as e:
-        print(f"Error extracting specs: {str(e)}")
+        print(f"Erreur lors de l'extraction des spécifications: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     return extracted_specs
 
-def process_laptops(start_index, max_per_batch=10):
+def process_laptops(start_index, min_index_to_process=229):
+    """
+    Process laptops from the given start index.
+    
+    Args:
+        start_index: Index to start processing from in the laptop_articles list
+        min_index_to_process: Minimum index (1-based) to process. Will skip laptops with index less than this.
+    """
     try:
-        # Find all laptop articles with reduced wait time
-        laptop_articles = WebDriverWait(driver, 7).until(
+        laptop_articles = WebDriverWait(driver, 10).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.yj6YNQW2 article.yArygEf2"))
         )
         print(f"Found {len(laptop_articles)} laptop articles")
-        
-        # Process only a subset for efficiency
-        end_index = min(start_index + max_per_batch, len(laptop_articles))
-        to_process = laptop_articles[start_index:end_index]
-        
         processed_count = 0
         
-        for index, article in enumerate(to_process, start=start_index + 1):
-            try:
-                # Skip type checking - we know we're on laptop page
-                try:
-                    # Get link directly - faster
-                    laptop_info_element = article.find_element(By.CSS_SELECTOR, "a[aria-label]")
-                    laptop_name = laptop_info_element.get_attribute("aria-label")
-                    product_link = laptop_info_element.get_attribute("href")
-                    
-                    print(f"Processing: {laptop_name}")
-                    
-                    # Open in new tab
-                    driver.execute_script("window.open(arguments[0]);", product_link)
-                    driver.switch_to.window(driver.window_handles[1])
-                    
-                    # Extract specs
-                    extract_specs_from_detail_page(driver, product_link)
-                    processed_count += 1
-                    
-                    # Close tab and return to main page
-                    driver.close()
-                    driver.switch_to.window(driver.window_handles[0])
-                    
-                except NoSuchElementException:
-                    print(f"Laptop #{index}: Missing link")
-                    continue
-                    
-            except Exception as e:
-                print(f"Error on laptop #{index}: {str(e)[:50]}...")
+        for index, article in enumerate(laptop_articles[start_index:], start=start_index + 1):
+            # Skip laptops below the minimum index to process
+            if index < min_index_to_process:
+                print(f"Skipping Laptop #{index} (waiting for #{min_index_to_process})")
                 continue
                 
-        print(f"Processed {processed_count} laptops")
+            try:
+                laptop_type_links = article.find_elements(By.CSS_SELECTOR, "a.yArygEfA")
+                is_portable = True  # Assume all are laptops since we're on the laptop category page
+                if laptop_type_links:
+                    is_portable = any("Ordinateur portable" in link.text for link in laptop_type_links)
+
+                if is_portable:
+                    try:
+                        laptop_info_element = article.find_element(By.CSS_SELECTOR, "a[aria-label]")
+                        laptop_name = laptop_info_element.get_attribute("aria-label")
+                        product_link = laptop_info_element.get_attribute("href")
+
+                        print(f"\n=== Processing Laptop #{index}: {laptop_name} ===")
+
+                        # Open detail page in new tab
+                        driver.execute_script("window.open(arguments[0]);", product_link)
+                        driver.switch_to.window(driver.window_handles[1])
+
+                        # Wait for page to load and extract specs using the new method
+                        specs = extract_specs_from_detail_page(driver, product_link)
+                        processed_count += 1
+                        
+                        driver.close()
+                        driver.switch_to.window(driver.window_handles[0])
+
+                    except NoSuchElementException:
+                        print(f"Laptop #{index}: Could not find laptop name or link")
+            except Exception as e:
+                print(f"Error processing laptop #{index}: {str(e)}")
+
+        print(f"Processed {processed_count} laptops in this batch")
         return len(laptop_articles)
-        
     except Exception as e:
         print(f"Error in process_laptops: {str(e)}")
         return start_index
 
-# Main execution with optimizations
+# Main execution
 print(f"Starting data collection. Results will be saved to {csv_filename}")
-
-# Open page and wait for load
 driver.get("https://www.digitec.ch/fr/s1/producttype/ordinateur-portable-6")
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CSS_SELECTOR, "div.yj6YNQW2"))
-)
-print("Web page loaded")
+print("Web page opened successfully.")
+sleep(3)  # Allow initial page to load
 
-# Process initial batch with smaller count for speed
-start_index = 0
-batch_size = 5  # Smaller initial batch for faster feedback
-total_laptops = process_laptops(start_index, batch_size)
+# Minimum laptop index to process (1-based)
+min_laptop_to_process = 230  # Start from laptop #230
 
-# Load more products - with optimized waits
-max_clicks = 3  # Reduced for testing
+# Load enough products by clicking "Afficher plus" until we have at least 230 products
+print(f"Loading products until we have at least {min_laptop_to_process} laptops")
+current_count = 0
 click_count = 0
+required_clicks = 4  # Estimate how many clicks needed to reach 230 laptops (about 60 laptops per click)
 
-while click_count < max_clicks:
+# Let's load enough laptops to reach our target
+while click_count < required_clicks:
     try:
-        # Find "Show more" button with reduced wait time
+        # Check how many laptops are currently loaded
+        laptop_articles = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.yj6YNQW2 article.yArygEf2"))
+        )
+        current_count = len(laptop_articles)
+        print(f"Currently loaded {current_count} laptops")
+        
+        # Scroll to the bottom to make sure the "Show more" button is visible
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(1)
+        
+        # Click "Show more" button
         show_more_button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Afficher plus de produits']"))
         )
-        
-        # Scroll and click
-        driver.execute_script("arguments[0].scrollIntoView(true);", show_more_button)
         driver.execute_script("arguments[0].click();", show_more_button)
         
-        print(f"Clicked 'Show more' button ({click_count + 1})")
+        print(f"Clicked 'Afficher plus' button ({click_count + 1})")
+        sleep(5)  # Wait longer for new products to load
+        click_count += 1
         
-        # Shorter wait after click - just enough for content to load
-        sleep(2)
-        
-        # Process next batch with increased size
-        batch_size = 10  # Can increase for subsequent batches
-        new_total_laptops = process_laptops(total_laptops, batch_size)
-        
-        if new_total_laptops > total_laptops:
-            total_laptops = new_total_laptops
-            click_count += 1
-        else:
-            print("No new laptops loaded")
-            break
-            
     except TimeoutException:
-        print("'Show more' button not found")
+        print("'Afficher plus' button not found or not clickable")
         break
     except Exception as e:
-        print(f"Error clicking 'Show more' button: {str(e)[:50]}...")
+        print(f"Error while loading more products: {str(e)}")
         break
 
-print(f"\nData collection complete. Saved to {csv_filename}")
+# Check that we have enough laptops loaded
+laptop_articles = driver.find_elements(By.CSS_SELECTOR, "div.yj6YNQW2 article.yArygEf2")
+current_count = len(laptop_articles)
+print(f"Loaded {current_count} laptops after {click_count} clicks")
+
+if current_count < min_laptop_to_process - 1:
+    print(f"WARNING: Only loaded {current_count} laptops, which may not be enough to reach #{min_laptop_to_process}")
+    
+# Wait an additional period for page to fully stabilize before processing
+print("Waiting for page to stabilize before processing...")
+sleep(5)
+
+# Process laptops starting from index 0, but only actually process those >= min_laptop_to_process
+start_index = 0
+total_laptops = process_laptops(start_index, min_laptop_to_process)
+
+# Now continue loading and processing more laptops
+max_clicks = 100
+additional_clicks = 0
+
+while additional_clicks < max_clicks:
+    try:
+        # Scroll to the bottom to make the "Show more" button visible
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(1)
+        
+        show_more_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Afficher plus de produits']"))
+        )
+        driver.execute_script("arguments[0].click();", show_more_button)
+
+        print(f"Clicked 'Afficher plus' button ({additional_clicks + 1})")
+        sleep(5)  # Wait for new products to load
+
+        new_total_laptops = process_laptops(total_laptops, min_laptop_to_process)
+        if new_total_laptops > total_laptops:
+            total_laptops = new_total_laptops
+            additional_clicks += 1
+        else:
+            print("No new laptops loaded, possibly reached the end")
+            break
+            
+        # Check for end of results message
+        try:
+            end_message = driver.find_elements(By.XPATH, "//div[contains(text(), 'Fin des résultats') or contains(text(), 'Tous les produits ont été chargés')]")
+            if end_message:
+                print("Reached end of products list")
+                break
+        except:
+            pass
+
+    except TimeoutException:
+        print("'Afficher plus' button not found or not clickable")
+        break
+    except Exception as e:
+        print(f"Error clicking 'Afficher plus' button: {str(e)}")
+        sleep(5)  # Wait and try to continue
+        continue
+
+print(f"\nData collection complete. Data saved to {csv_filename}")
+sleep(2)
 driver.quit()
