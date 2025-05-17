@@ -57,17 +57,19 @@ class sql_database_interface:
         Parse the tuple line. The tuple has to have length equal to the number of elements one each row of the category
         :param tuple_values: the tuple values associated with the category of this database
         """
-        assert len(tuple_values) == len(self.category.header)
-        length_tuple = len(tuple_values)
-        entry_to_add = "("
-        for i in range(length_tuple - 1):
-            entry_to_add += f"'{tuple_values[i].lower()}',"
-        #add the last one
-        entry_to_add += f"'{tuple_values[length_tuple -1].lower()}')"
-
         try:
-            self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
-            self.connection.commit()
+            length_tuple = len(tuple_values)
+            entry_to_add = "("
+            for i in range(length_tuple - 1):
+                entry_to_add += f"'{tuple_values[i].lower()}',"
+            # add the last one
+            entry_to_add += f"'{tuple_values[length_tuple - 1].lower()}')"
+
+            try:
+                self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
+                self.connection.commit()
+            except:
+                pass
         except:
             pass
 
@@ -114,17 +116,20 @@ class sql_database_interface:
         self.c.close()
 
 
+
 laptops = sql_database_interface(Categories.LAPTOPS).filter_database()
 print(laptops)
 print(len(laptops))
 
+
+"""
 database_interface = sql_database_interface(Categories.LAPTOPS)
-with open("../laptops_data_20250517_081717.csv", "r", encoding="utf-8") as file:
+with open("../laptops_to_clean.csv", "r", encoding="utf-8") as file:
     r = list(csv.reader(file))
     for row in r[1:]:
         database_interface.parse_line(tuple(row))
 
-
+"""
 """
 database = sql_database_interface(Categories.LAPTOPS)
 
