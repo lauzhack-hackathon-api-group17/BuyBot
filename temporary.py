@@ -32,14 +32,19 @@ DESIRED_SPECS = [
 CSV_HEADERS = ["Brand", "Model", "Category", "Display", "CPU", "RAM", "Storage", "GPU", "OS", "Weight", "Price", "Link"]
 
 # Create or open the CSV file
-csv_filename = f"laptops_data_from230_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+csv_filename = f"laptops_data_from393_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # Setup Chrome options
 chrome_options = Options()
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option("useAutomationExtension", False)
+
+# Add headless mode for faster execution
+chrome_options.add_argument("--headless=new")  # Modern Chrome uses this syntax
+chrome_options.add_argument("--disable-gpu")  # Important for headless mode
+chrome_options.add_argument("--window-size=1920,1080")  # Set a window size to mimic real browser
 
 # Set up the WebDriver
 service = Service(ChromeDriverManager().install())
@@ -80,7 +85,11 @@ def extract_specs_from_detail_page(driver, product_url):
     try:
         # Wait for the page to load properly with explicit wait
         wait = WebDriverWait(driver, 10)
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ypBxcVsA")))
+        try:
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ypBxcVsA")))
+        except TimeoutException:
+            # If the specific element isn't found, wait for any content
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Try to find and click any "Show more specs" button
         try:
@@ -275,7 +284,7 @@ def extract_specs_from_detail_page(driver, product_url):
     
     return extracted_specs
 
-def process_laptops(start_index, min_index_to_process=230):
+def process_laptops(start_index, min_index_to_process=393):
     """
     Process laptops from the given start index.
     
@@ -337,18 +346,18 @@ def process_laptops(start_index, min_index_to_process=230):
 
 # Main execution
 print(f"Starting data collection. Results will be saved to {csv_filename}")
-driver.get("https://www.digitec.ch/fr/s1/producttype/ordinateur-portable-6")
+driver.get("https://www.digitec.ch/fr/s1/producttype/ordinateur-portable-6?count=200")  # Request more items per page
 print("Web page opened successfully.")
 sleep(3)  # Allow initial page to load
 
 # Minimum laptop index to process (1-based)
-min_laptop_to_process = 230  # Start from laptop #230
+min_laptop_to_process = 393  # Start from laptop #393 (CHANGED FROM 230)
 
-# Load enough products by clicking "Afficher plus" until we have at least 230 products
+# Load enough products by clicking "Afficher plus" until we have at least 393 products
 print(f"Loading products until we have at least {min_laptop_to_process} laptops")
 current_count = 0
 click_count = 0
-required_clicks = 4  # Estimate how many clicks needed to reach 230 laptops (about 60 laptops per click)
+required_clicks = 8  # Increased to ensure we reach laptop #393 (about 60 laptops per click)
 
 # Let's load enough laptops to reach our target
 while click_count < required_clicks:
@@ -360,19 +369,35 @@ while click_count < required_clicks:
         current_count = len(laptop_articles)
         print(f"Currently loaded {current_count} laptops")
         
+        if current_count >= min_laptop_to_process + 10:  # Added buffer of 10
+            print(f"Reached sufficient laptops ({current_count}) to process starting from #{min_laptop_to_process}")
+            break
+        
         # Scroll to the bottom to make sure the "Show more" button is visible
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         sleep(1)
         
-        # Click "Show more" button
-        show_more_button = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Afficher plus de produits']"))
-        )
-        driver.execute_script("arguments[0].click();", show_more_button)
-        
-        print(f"Clicked 'Afficher plus' button ({click_count + 1})")
-        sleep(5)  # Wait longer for new products to load
-        click_count += 1
+        # Click "Show more" button with multiple attempts and selectors
+        try:
+            show_more_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Afficher plus de produits']"))
+            )
+            driver.execute_script("arguments[0].click();", show_more_button)
+            
+            print(f"Clicked 'Afficher plus' button ({click_count + 1})")
+            sleep(5)  # Wait longer for new products to load
+            click_count += 1
+        except:
+            # Try alternative button selector
+            try:
+                show_more_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Afficher plus')]")
+                driver.execute_script("arguments[0].click();", show_more_button)
+                print(f"Clicked alternative 'Afficher plus' button ({click_count + 1})")
+                sleep(5)
+                click_count += 1
+            except:
+                print("Could not find 'Show more' button with any selector")
+                break
         
     except TimeoutException:
         print("'Afficher plus' button not found or not clickable")
