@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from unicodedata import category
-
+import FinanceBot.utils as utils
 from FinanceBot.data_categories_entries.data_categories import Categories
 
 
@@ -41,13 +41,33 @@ class sql_database_interface:
         self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
         self.connection.commit()
 
-    def filter_database(self, filter_lists):
+    def filter_database(self, filter_lists) -> list:
         """
         Filter the rows of the database according to filter lists
         :param filter_lists: each list contains a number of filters for
-        :return:
+        :return: a list of items that satisfy the filtering
         """
+        length_filter_list = len(filter_lists)
+        listToReturn = []
+        self.c.execute(f"SELECT * FROM {self.category.name}")
+        #after that the cursor contains rows
+        for row in self.c:
+            assert len(row) == len(filter_lists)
+            length_row = len(row)
+            found_unrespected_constraint = False
+            for i in range(length_row):
+                for string in filter_lists[i]:
+                    if utils.compare_strings(string, row[i]) < utils.PROBABILITY_THRESHOLD:
+                        found_unrespected_constraint = True
+                        break
+                if found_unrespected_constraint:
+                    break
 
+            if not found_unrespected_constraint:
+                listToReturn.append(row)
+
+
+        return listToReturn
 
 
     def close_connection(self):

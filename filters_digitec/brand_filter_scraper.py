@@ -19,7 +19,7 @@ driver.get("https://www.digitec.ch/fr/s1/producttype/ordinateur-portable-6?filte
 utils.wait_for_page_elements_to_load_by(driver, By.XPATH, "//button[@aria-label='Marque']", 10)
 table = utils.wait_for_page_elements_to_load_by(driver, By.CLASS_NAME, "yd88NAO8", 10)[0]
 rows = table.find_elements(By.TAG_NAME, "li")
-with open("../scraped_lists/BRANDS.csv", "w") as file:
+with open("../scraped_lists/LAPTOPS/BRANDS.csv", "w", encoding="utf-8") as file:
     writer = csv.writer(file)
     for row in rows:
         try:
