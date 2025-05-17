@@ -34,12 +34,19 @@ class sql_database_interface:
         length_tuple = len(tuple_values)
         entry_to_add = "("
         for i in range(length_tuple - 1):
-            entry_to_add += f"'{tuple_values[i]}',"
+            entry_to_add += f"'{tuple_values[i].lower()}',"
         #add the last one
-        entry_to_add += f"'{tuple_values[length_tuple -1]}')"
+        entry_to_add += f"'{tuple_values[length_tuple -1].lower()}')"
 
         self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
         self.connection.commit()
+
+    def filter_database(self, filter_lists):
+        """
+        Filter the rows of the database according to filter lists
+        :param filter_lists: each list contains a number of filters for
+        :return:
+        """
 
 
 
