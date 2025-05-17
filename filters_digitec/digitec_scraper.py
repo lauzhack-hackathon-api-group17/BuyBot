@@ -28,13 +28,11 @@ DESIRED_SPECS = [
     "Capacité SSD"
 ]
 
-# CSV column headers
 CSV_HEADERS = ["Brand", "Model", "Category", "Display", "CPU", "RAM", "Storage", "GPU", "OS", "Weight", "Price", "Link"]
-
-# Create or open the CSV file
 csv_filename = f"laptops_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # Setup Chrome options
+#I dont know what the third line does but it doesnt work without it
 chrome_options = Options()
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
@@ -45,7 +43,6 @@ chrome_options.add_experimental_option("useAutomationExtension", False)
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
-# Disable detection
 driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
 # Initialize CSV file with headers
@@ -53,6 +50,8 @@ with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
     csv_writer = csv.writer(csvfile)
     csv_writer.writerow(CSV_HEADERS)
 
+#added later to clean up to remove unnecessary parsing later
+#############################################33
 def clean_model_name(model_name):
     """Clean the model name to remove unwanted text."""
     # Remove "- acheter sur Digitec" and similar suffixes
@@ -72,7 +71,11 @@ def clean_model_name(model_name):
     model_name = re.sub(r'\s+', ' ', model_name).strip()
     
     return model_name
+###############################################
 
+#hardest function I have ever written this was absolute hell
+# this retrieves the specs from the product page, 
+#at the beginning looked ez because it was a html table but I fell for the trap
 def extract_specs_from_detail_page(driver, product_url):
     # Initialize dictionary with all desired specs set to None
     extracted_specs = {spec: None for spec in DESIRED_SPECS}
@@ -82,8 +85,7 @@ def extract_specs_from_detail_page(driver, product_url):
         wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ypBxcVsA")))
         
-        # Try to find and click any "Show more specs" button
-        try:
+        try:#button style="yqCAcxE"
             show_more_buttons = driver.find_elements(By.XPATH, "//button[contains(@class, 'yqCAcxE')]")
             for button in show_more_buttons:
                 if "Afficher plus" in button.text or "Afficher" in button.text:
@@ -135,8 +137,8 @@ def extract_specs_from_detail_page(driver, product_url):
                     brand = b
                     print(f"Extracted Brand from model name: {brand}")
                     break
-        
-        # More flexible patterns for different HTML structures
+        ######################################################################
+        # Honestly this is chatgpt stuff I have no idea what it does
         patterns = {
             # Pattern 1: Standard text in span
             1: r'<div class="ywIf8Ay">{spec}.*?</div></td><td.*?><span>([^<]+)',
@@ -147,7 +149,7 @@ def extract_specs_from_detail_page(driver, product_url):
             # Pattern 4: Text in link
             4: r'<div class="ywIf8Ay">{spec}.*?</div></td><td.*?><a[^>]*>([^<]+)',
         }
-        
+        ##########################################################################
         # Manual extraction from the page source
         for spec in DESIRED_SPECS:
             # Try each pattern until we find a match
@@ -199,7 +201,7 @@ def extract_specs_from_detail_page(driver, product_url):
             'class="yXGq3V4">[^\d]*(\d+\.–)',
             'yXGq3V4">\s*CHF\s*(\d+\.–)'
         ]
-        
+        # Try each regex pattern to find the price
         for pattern in price_patterns:
             price_match = re.search(pattern, page_source, re.DOTALL)
             if price_match:
@@ -228,7 +230,6 @@ def extract_specs_from_detail_page(driver, product_url):
         print(f"Total specifications found: {total_found}")
         print("===============================")
         
-        # Map the extracted specs to the CSV format
         taille_ecran = extracted_specs.get("Taille de l'écran", "")
         definition_ecran = extracted_specs.get("Définition de l'écran", "")
         display = f"{taille_ecran} {definition_ecran}".strip()
@@ -282,7 +283,7 @@ def process_laptops(start_index):
         )
         print(f"Found {len(laptop_articles)} laptop articles")
         processed_count = 0
-        
+        # Loop through the articles starting from the specified index (because scraping was excruciatingly slow)
         for index, article in enumerate(laptop_articles[start_index:], start=start_index + 1):
             try:
                 laptop_type_links = article.find_elements(By.CSS_SELECTOR, "a.yArygEfA")
