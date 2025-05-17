@@ -25,20 +25,32 @@ USER_GEN_INSTRUCTION = (
 )
 
 RECOMMENDATION_INSTRUCTION_TEMPLATE = (
-    f"You are a laptop recommendation system.\n"
+    f"You are a laptop recommendation system that provides highly realistic, diverse, and technically accurate laptop recommendations.\n"
     f"Database format: {DATABASE_FORMAT}.\n"
     f"Based on the user's needs and budget, provide exactly {N_RECOMMENDATIONS} laptop recommendations in strict CSV format. "
-    f"Ensure each row has exactly the following fields in order: {DATABASE_FORMAT}. "
-    "Avoid repeating values across any column unless all reasonable alternatives are exhausted, allowing repetition only when necessary. "
-    "Express display sizes in inches and weights in kg WITHOUT explicitly formatting units in the CSV (e.g., use only the numeric value)."
+    f"Ensure each row has exactly the following fields in order: {DATABASE_FORMAT}.\n\n"
+    "Important requirements:\n"
+    "1. Each recommendation must be REALISTIC with current market specifications and models as of 2024.\n"
+    "2. Create HIGH DIVERSITY across all recommendations - vary brands, models, categories, CPUs, etc.\n"
+    "3. Match specifications accurately to real-world laptop segments and price points.\n"
+    "4. Scale specs appropriately to user's budget and needs (higher budget = better specs).\n"
+    "5. Include diverse brands: Dell, HP, Lenovo, Apple, Asus, MSI, Acer, Microsoft, LG, Samsung, Razer, Gigabyte, etc.\n"
+    "6. Use accurate CPU naming conventions like 'Intel Core i7-13700H', 'AMD Ryzen 7 7840U', 'Apple M3 Pro', etc.\n"
+    "7. Include realistic GPU options from 'Intel Iris Xe', 'AMD Radeon 780M' to 'NVIDIA RTX 4070' depending on budget.\n"
+    "8. Provide varied storage options from 256GB to 2TB based on price point.\n"
+    "9. Ensure each recommendation is unique - NO duplicated models or specs except when absolutely unavoidable.\n"
+    "10. Express display sizes in inches and weights in kg WITHOUT explicitly formatting units in the CSV (e.g., use only the numeric value)."
 )
 
 # --- FUNCTIONAL STEPS ---
 def generate_user_inputs():
     response = client.chat.completions.create(
         model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
-        messages=[{"role": "system", "content": USER_GEN_INSTRUCTION}],
-        max_tokens=256,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": USER_GEN_INSTRUCTION}
+        ],
+        max_tokens=min(256 * N_QUERIES, 2048),
         temperature=0.7,
     )
     lines = response.choices[0].message.content.strip().splitlines()
@@ -57,20 +69,59 @@ def generate_user_inputs():
 
 def generate_llm_outputs(user_inputs: list[str]) -> list[str]:
     outputs: list[str] = []
-    system_msg = RECOMMENDATION_INSTRUCTION_TEMPLATE
-    for user_query in user_inputs:
+    
+    for idx, user_query in enumerate(user_inputs):
+        # Customize instructions for each query type to further diversify results
+        custom_instruction = RECOMMENDATION_INSTRUCTION_TEMPLATE
+        
+        # Add query-specific guidance to prevent repetition across different queries
+        if idx == 0:
+            custom_instruction += "\nFocus on mid-range workstation and creator laptops suitable for the specified budget."
+        elif idx == 1:
+            custom_instruction += "\nFocus on budget-friendly, lightweight options with good battery life that match the lower price point."
+        else:
+            custom_instruction += "\nFocus on high-performance professional workstations or gaming laptops converted for professional use."
+        
         messages = [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_query}
+            {"role": "system", "content": custom_instruction},
+            {"role": "user", "content": f"Query: {user_query}\n\nProvide {N_RECOMMENDATIONS} diverse recommendations that would suit this need and budget."}
         ]
+        
         response = client.chat.completions.create(
             model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
             messages=messages,
-            max_tokens=512,
-            temperature=0.3,
+            max_tokens=min(256 * N_RECOMMENDATIONS, 4096),  # Increased token limit
+            temperature=0.5,  # Balanced temperature for creativity and accuracy
         )
-        outputs.append(response.choices[0].message.content.strip())
+        
+        # Clean the output to ensure it's proper CSV format
+        raw_output = response.choices[0].message.content.strip()
+        cleaned_output = clean_csv_output(raw_output)
+        outputs.append(cleaned_output)
+        
     return outputs
+
+
+def clean_csv_output(raw_output: str) -> str:
+    """Clean and normalize CSV output from LLM to ensure proper formatting"""
+    lines = raw_output.strip().split('\n')
+    cleaned_lines = []
+    
+    # Skip header line if present (starts with Brand or contains all attribute names)
+    for line in lines:
+        if line.startswith("Brand,") or all(attr.lower() in line.lower() for attr in ATTRIBUTES):
+            continue
+        # Remove any line numbers, bullets, or other prefixes
+        clean_line = line.strip().lstrip("-•1234567890. ")
+        # Skip empty lines or lines with incomplete data
+        if clean_line and "," in clean_line:
+            # Ensure we have the expected number of fields
+            fields = clean_line.split(',')
+            if len(fields) >= len(ATTRIBUTES):
+                # Keep only the fields we need in case there are extra fields
+                cleaned_lines.append(",".join(fields[:len(ATTRIBUTES)]))
+    
+    return "\n".join(cleaned_lines)
 
 
 def save_constants_py(user_inputs: list[str], llm_outputs: list[str], file_path: str = "constants.py"):
@@ -94,6 +145,7 @@ def save_constants_py(user_inputs: list[str], llm_outputs: list[str], file_path:
         f.write("]\n")
 
     print(f"[✓] constants.py written with cleaned, diversified recommendations.")
+
 
 # --- EXECUTION ---
 if __name__ == "__main__":

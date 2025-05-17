@@ -5,6 +5,8 @@ from keys import TOGETHER_AI
 
 # Instantiate the Together client (it will also read TOGETHER_API_KEY from env if not passed)
 client = Together(api_key=TOGETHER_AI)
+N_RECOMMENDATIONS = 10
+
 
 def get_laptop_recommendations(user_input: str) -> str:
     """
@@ -28,7 +30,7 @@ def get_laptop_recommendations(user_input: str) -> str:
     response = client.chat.completions.create(
         model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
         messages=messages,
-        max_tokens=2048,
+        max_tokens=min(512 * N_RECOMMENDATIONS, 4096),
         temperature=0.2,
     )
 
