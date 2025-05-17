@@ -2,11 +2,11 @@ import csv
 import sqlite3
 import os
 from unicodedata import category
-import FinanceBot.utils as utils
-from FinanceBot.data_categories_entries.data_categories import Categories
+import utils as utils
+from data_categories_entries.data_categories import Categories
 import numpy as np
 
-from FinanceBot.utils import PROBABILITY_THRESHOLD
+from utils import PROBABILITY_THRESHOLD
 
 
 def create_database_if_it_does_not_exist(category: Categories):
@@ -91,18 +91,17 @@ class sql_database_interface:
             matched_filters = 0
             for i in range(length_row):
                 found_matching_filter = False
-                if i >= 2: #skip first two filters
-                    for string in filter_lists[i]:
+                 #skip first two filters
+                for string in filter_lists[i]:
 
-                        comparaison = utils.compare_strings(string, row[i]) >= utils.PROBABILITY_THRESHOLD
-                        if comparaison >= PROBABILITY_THRESHOLD and not found_matching_filter:
-                            matched_filters += 1
-                            found_matching_filter = True
-                else:
-                    matched_filters +=1
-            print(matched_filters / length_filter_list)
+                    comparaison = utils.compare_strings(string, row[i]) >= utils.PROBABILITY_THRESHOLD
+                    if comparaison >= PROBABILITY_THRESHOLD and not found_matching_filter:
+                        print()
+                        matched_filters += self.category.filter_weights[i]
+                        found_matching_filter = True
+            print(matched_filters)
             print(row)
-            if matched_filters / length_filter_list >= utils.FILTER_THRESHOLD:
+            if matched_filters >= utils.FILTER_THRESHOLD:
                 listToReturn.append(row)
 
 
