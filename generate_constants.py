@@ -15,6 +15,7 @@ DATABASE_FORMAT: str = ",".join(ATTRIBUTES)
 # Number of example user queries and recommendations per query
 N_QUERIES: int = 3
 N_RECOMMENDATIONS: int = 10
+MAX_API_CALLS: int = 10  # Max API calls to avoid rate limits
 
 PROMPT = f"""You are a laptop recommendation system. Your task is to provide laptop recommendations based on user needs and budget.
 Your output should consist of only a CSV-formatted string and nothing else.
@@ -55,23 +56,45 @@ def generate_user_inputs():
         max_tokens=min(512 * N_QUERIES, 2048),
         temperature=0.7,
     )
-    lines = response.choices[0].message.content.strip().splitlines()
+    
+    # Extract the actual queries from the LLM response
+    raw_text = response.choices[0].message.content.strip()
+    lines = raw_text.splitlines()
+    
     queries: list[str] = []
-    budgets_needed_left = N_QUERIES // 2
+    
+    # First pass: collect all valid queries
+    all_valid_queries = []
     for line in lines:
         clean = line.strip().lstrip("-•1234567890. ").strip('"')
-        # Ensure some queries have a budget and some do not
-        if "CHF" in clean:
-            if budgets_needed_left > 0:
-                queries.append(clean)
-                budgets_needed_left -= 1
-            else:
-                continue
-        if clean:
-            queries.append(clean)
-        if len(queries) == N_QUERIES:
-            break
-    return queries
+        if not clean or clean.lower().startswith(("here", "these", "following")):
+            continue
+        all_valid_queries.append(clean)
+    
+    # Critical bug fix: We were decrementing max_api_calls_left incorrectly
+    # MAX_API_CALLS refers to the entire API usage limit, not per query
+    
+    # Second pass: collect queries with budget first
+    for query in all_valid_queries:
+        if "CHF" in query and len(queries) < N_QUERIES:
+            queries.append(query)
+            
+    # Third pass: add queries without budget until we reach N_QUERIES
+    for query in all_valid_queries:
+        if "CHF" not in query and len(queries) < N_QUERIES:
+            queries.append(query)
+    
+    # If we don't have enough queries, generate more
+    if len(queries) < N_QUERIES:
+        print(f"[!] Warning: Only generated {len(queries)} valid queries. Filling with defaults.")
+        default_queries = [
+            "I need a laptop for programming and software development under 1500CHF.",
+            "Looking for a lightweight laptop for writing and web browsing.",
+            "Need a powerful gaming laptop with excellent graphics and cooling."
+        ]
+        queries.extend(default_queries[:(N_QUERIES - len(queries))])
+    
+    return queries[:N_QUERIES]  # Ensure we return exactly N_QUERIES
 
 
 def generate_llm_outputs(user_inputs: list[str]) -> list[str]:

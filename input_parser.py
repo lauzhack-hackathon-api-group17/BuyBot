@@ -7,7 +7,9 @@ from utils import get_possibilities
 
 # Instantiate the Together client (it will also read TOGETHER_API_KEY from env if not passed)
 client = Together(api_key=TOGETHER_AI)
-N_RECOMMENDATIONS = 10
+N_RECOMMENDATIONS = 20
+
+print(get_possibilities())
 
 def get_laptop_recommendations(user_input: str) -> str:
     """
