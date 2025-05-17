@@ -9,8 +9,6 @@ from utils import get_possibilities
 client = Together(api_key=TOGETHER_AI)
 N_RECOMMENDATIONS = 20
 
-print(get_possibilities())
-
 def get_laptop_recommendations(user_input: str) -> str:
     """
     Get laptop recommendations based on user input using Together AI.
@@ -80,5 +78,3 @@ def create_specs_database(user_input: str) -> None:
     create_database(recommendations)
     
     return recommendations
-
-print(create_specs_database(input()))

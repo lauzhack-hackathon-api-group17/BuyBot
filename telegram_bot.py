@@ -109,8 +109,7 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
             print(f"Generated specs database: {specs_database}")
 
         # Filter results
-        sdi = SDI.sql_database_interface(Categories.LAPTOPS)
-        filtered_laptops = sdi.filter_database()
+        filtered_laptops = SDI.sql_database_interface(Categories.LAPTOPS).filter_database()
 
         if DEBUG:
             print(f"Filtered laptops: {filtered_laptops}")
@@ -147,6 +146,8 @@ def main() -> None:
     """Start the Telegram bot."""
     application = Application.builder().token(TELEGRAM_KEY).build()
 
+    print("Starting Telegram bot...")
+
     # Handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_laptop_input))
     application.add_handler(CommandHandler("clear", clear, block=False))
@@ -154,6 +155,4 @@ def main() -> None:
     # Run the bot
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-
-if __name__ == "__main__":
-    main()
+main()

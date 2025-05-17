@@ -10,9 +10,9 @@ from utils import PROBABILITY_THRESHOLD
 
 
 def create_database_if_it_does_not_exist(category: Categories):
-    file_name = category.database_name_for_category()
+    file_name = "sql_database/"+ category.database_name_for_category()
     if not os.path.exists(file_name):
-        conn = sqlite3.connect(category.database_name_for_category())
+        conn = sqlite3.connect("sql_database/"+category.database_name_for_category())
         c = conn.cursor()
         c.execute(f"CREATE TABLE {category.name} {category.string_to_create_database()}")
         c.close()
@@ -33,7 +33,7 @@ def create_filter_database_parser(category: Categories) -> list:
     has in each column one type of filter for example CPU, GPU etc... depending on category
     :return: the filter we will want to have to match computers with our database
     """
-    with open("../database/specs_database.csv", "r") as file:
+    with open("database/specs_database.csv", "r") as file:
         r = list(csv.reader(file))
         matrix_to_return = []
         #fill the matrix with lists
@@ -58,7 +58,7 @@ class sql_database_interface:
         """
         self.category = category
         create_database_if_it_does_not_exist(category)
-        self.connection = sqlite3.connect(category.database_name_for_category())
+        self.connection = sqlite3.connect("sql_database/"+category.database_name_for_category())
         self.c = self.connection.cursor()
 
     def parse_line(self, tuple_values: tuple):
