@@ -22,6 +22,7 @@ def get_laptop_recommendations(user_input: str) -> str:
         Note: The current date is {time.strftime('%Y-%m-%d')}.
         - Some components may have changed in price since your last training data.
         - Some components may be newly released and not present in your knowledge.
+        - You should aggregate the price and weight from the database.
 
         Please proceed accordingly.
     """

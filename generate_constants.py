@@ -34,7 +34,7 @@ RECOMMENDATION_INSTRUCTION_TEMPLATE = (
     f"Based on the user's needs and budget, provide exactly {N_RECOMMENDATIONS} laptop recommendations in strict CSV format. "
     f"Ensure each row has exactly the following fields in order: {DATABASE_FORMAT}.\n\n"
     "Important requirements:\n"
-    f"1. For some components/specifications, you can only use the values from these lists: {get_possibilities()}.\n"
+    f"1. For some components/specifications, you can only use the values from these lists: {get_possibilities()} except for the price and weight which you should aggregate from the database.\n"
     f"2. Each recommendation must be REALISTIC with your market estimation from current date: {time.strftime('%Y-%m-%d')} and the components you can use.\n"
     "3. Create HIGH DIVERSITY across all recommendations - vary brands, models, categories, CPUs, etc.\n"
     "4. Scale specs appropriately to user's budget and needs (higher budget = better specs).\n"
