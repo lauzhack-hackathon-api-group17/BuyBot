@@ -19,6 +19,7 @@ from telegram.ext import (
 )
 from input_parser import create_specs_database
 import sql_database.sql_database_interface as SDI
+import random
 from keys import TELEGRAM_KEY, TOGETHER_AI
 from together import Together
 from pprint import pprint
@@ -73,7 +74,9 @@ def query_llm(user_input, laptops_list, user_id):
     # Query Together AI
     response = client.chat.completions.create(
         model=llm_model,
-        messages=USER_MESSAGES[user_id]
+        messages=USER_MESSAGES[user_id],
+        max_tokens=8096,
+        temperature=0.7,
     )
     text_response = response.choices[0].message.content
 
@@ -127,6 +130,9 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         if DEBUG:
             print(f"Formatted output: {formatted}")
+
+        # Take randomly at most 20 laptops
+        filtered_laptops = random.sample(filtered_laptops, min(20, len(filtered_laptops)))
 
         if VERBOSE:
             logger.info("Filtered laptops: %s", filtered_laptops)
