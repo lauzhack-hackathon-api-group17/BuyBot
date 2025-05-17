@@ -72,19 +72,11 @@ def create_database(llm_output: str, directory_name: str = "database", filename 
 
     print(f"Database saved to: {file_path}")
 
-def main():
-    print("Welcome to Laptop Recommendation System")
-    print("Please describe your laptop needs and budget:")
-    user_input = input(">>> ")
-    
-    print("\nGenerating laptop recommendations...")
+def create_specs_database(user_input: str) -> None:
     recommendations = get_laptop_recommendations(user_input)
     
-    print("\nRecommended laptops based on your requirements:")
     print(recommendations)
 
     create_database(recommendations)
     
     return recommendations
-
-main()
