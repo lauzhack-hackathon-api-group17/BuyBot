@@ -9,8 +9,8 @@ client = Together(api_key=TOGETHER_AI)
 MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 
 # --- CONFIGURABLE ATTRIBUTES ---
-# Only take the n-2 first elements of the header to exclude price and link
-ATTRIBUTES: list[str] = Categories.LAPTOPS.header[:-2]
+# Only take the n-1 first elements of the header to exclude the link
+ATTRIBUTES: list[str] = Categories.LAPTOPS.header[:-1]
 DATABASE_FORMAT: str = ",".join(ATTRIBUTES)
 # Number of example user queries and recommendations per query
 N_QUERIES: int = 3

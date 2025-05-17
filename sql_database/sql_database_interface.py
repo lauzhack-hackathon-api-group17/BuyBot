@@ -2,11 +2,11 @@ import csv
 import sqlite3
 import os
 from unicodedata import category
-import FinanceBot.utils as utils
-from FinanceBot.data_categories_entries.data_categories import Categories
+import utils
+from data_categories_entries.data_categories import Categories
 import numpy as np
 
-from FinanceBot.utils import PROBABILITY_THRESHOLD
+from utils import PROBABILITY_THRESHOLD
 
 
 def create_database_if_it_does_not_exist(category: Categories):
@@ -24,7 +24,7 @@ def create_filter_database_parser(category: Categories) -> list:
     has in each column one type of filter for example CPU, GPU etc... depending on category
     :return: the filter we will want to have to match computers with our database
     """
-    with open("../database/specs_database.csv", "r") as file:
+    with open("database/specs_database.csv", "r") as file:
         r = list(csv.reader(file))
         matrix_to_return = []
         #fill the matrix with lists

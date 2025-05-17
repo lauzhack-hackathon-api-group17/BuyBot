@@ -29,6 +29,7 @@ MAX_CHAT_HISTORY = 10
 TELEGRAM_MAX_OUTPUT = 4096
 VERBOSE = True
 N_SUGGESTIONS = 5
+DEBUG = True
 
 # Global storage
 USER_MESSAGES = dict()
@@ -97,13 +98,22 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     input_text = update.message.text
     user_id = update.message.from_user.id
 
+    if DEBUG:
+        print(f"Received input from user {user_id}: {input_text}")
+
     try:
         # Generate specs database from input text
-        _ = create_specs_database(input_text)
+        specs_database = create_specs_database(input_text)
+
+        if DEBUG:
+            print(f"Generated specs database: {specs_database}")
 
         # Filter results
         sdi = SDI.sql_database_interface(Categories.LAPTOPS)
         filtered_laptops = sdi.filter_database()
+
+        if DEBUG:
+            print(f"Filtered laptops: {filtered_laptops}")
 
         if not filtered_laptops:
             await update.message.reply_text("⚠️ No suitable laptops found after filtering.")
@@ -111,6 +121,9 @@ async def handle_laptop_input(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         # Format using LLM
         formatted = query_llm(input_text, filtered_laptops, user_id)
+
+        if DEBUG:
+            print(f"Formatted output: {formatted}")
 
         if VERBOSE:
             logger.info("Filtered laptops: %s", filtered_laptops)
@@ -140,3 +153,7 @@ def main() -> None:
 
     # Run the bot
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
+if __name__ == "__main__":
+    main()
