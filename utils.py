@@ -39,6 +39,7 @@ unwanted_chars_set = {
 }
 
 PROBABILITY_THRESHOLD = 0.9
+FILTER_THRESHOLD = 0.41
 
 
 def clean_str(string: str):

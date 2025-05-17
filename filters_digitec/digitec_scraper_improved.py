@@ -35,6 +35,7 @@ CSV_HEADERS = ["Brand", "Model", "Category", "Display", "CPU", "RAM", "Storage",
 csv_filename = f"laptops_data_from393_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # Setup Chrome options
+#I dont know what the third line does but it doesnt work without it
 chrome_options = Options()
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36")
@@ -43,7 +44,7 @@ chrome_options.add_experimental_option("useAutomationExtension", False)
 
 # Add headless mode for faster execution
 chrome_options.add_argument("--headless=new")  # Modern Chrome uses this syntax
-chrome_options.add_argument("--disable-gpu")  # Important for headless mode
+chrome_options.add_argument("--disable-gpu")  # Important for headless mode (prevents rendering issues in headless Chrome)
 chrome_options.add_argument("--window-size=1920,1080")  # Set a window size to mimic real browser
 
 # Set up the WebDriver
@@ -57,7 +58,8 @@ driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () =>
 with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
     csv_writer = csv.writer(csvfile)
     csv_writer.writerow(CSV_HEADERS)
-
+#added later to clean up to remove unnecessary parsing later
+#############################################33
 def clean_model_name(model_name):
     """Clean the model name to remove unwanted text."""
     # Remove "- acheter sur Digitec" and similar suffixes
@@ -77,7 +79,11 @@ def clean_model_name(model_name):
     model_name = re.sub(r'\s+', ' ', model_name).strip()
     
     return model_name
+###############################################
 
+#hardest function I have ever written this was absolute hell
+# this retrieves the specs from the product page, 
+#at the beginning looked ez because it was a html table but I fell for the trap
 def extract_specs_from_detail_page(driver, product_url):
     # Initialize dictionary with all desired specs set to None
     extracted_specs = {spec: None for spec in DESIRED_SPECS}
@@ -92,6 +98,8 @@ def extract_specs_from_detail_page(driver, product_url):
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Try to find and click any "Show more specs" button
+        # not needed in theory but I will leave it here in case it is needed
+        ############################################################
         try:
             show_more_buttons = driver.find_elements(By.XPATH, "//button[contains(@class, 'yqCAcxE')]")
             for button in show_more_buttons:
@@ -102,13 +110,11 @@ def extract_specs_from_detail_page(driver, product_url):
                     sleep(2)  # Wait for expanded content to load
         except Exception as e:
             print(f"Note: Could not find or click show more button: {e}")
-        
+        #########################################################################
         # Scroll through page to ensure all content is loaded
         for scroll_position in [300, 600, 900, 1200, 1500]:
             driver.execute_script(f"window.scrollTo(0, {scroll_position})")
             sleep(0.5)
-        
-        # Scroll back to top
         driver.execute_script("window.scrollTo(0, 0)")
         sleep(1)
         
