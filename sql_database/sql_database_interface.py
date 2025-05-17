@@ -2,11 +2,7 @@ import csv
 import sqlite3
 import os
 from unicodedata import category
-<<<<<<< HEAD
 import utils
-=======
-import utils as utils
->>>>>>> 0935f284d5acf358c9b486f17fdecc510fa1cf7c
 from data_categories_entries.data_categories import Categories
 import numpy as np
 
