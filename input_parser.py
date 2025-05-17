@@ -80,3 +80,5 @@ def create_specs_database(user_input: str) -> None:
     create_database(recommendations)
     
     return recommendations
+
+print(create_specs_database(input()))

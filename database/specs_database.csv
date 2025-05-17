@@ -1,10 +1,10 @@
-Dell,XPS 15,Creator,15.6,Intel Core i7-13700H,16,512,NVIDIA GeForce GTX 1660 Ti,Windows 11,1.85
-Apple,MacBook Pro 16,Creator,16,Apple M2 Pro,16,512,Apple M2 Pro,macOS,1.83
-Asus,Vivobook Pro 16X,Creator,16,AMD Ryzen 9 7940HS,16,512,NVIDIA GeForce RTX 4060,Windows 11,1.95
-MSI,PS65,Creator,15.6,Intel Core i7-13700H,16,1024,NVIDIA GeForce GTX 1660 Ti,Windows 11,1.88
-Razer,Blade 15,Creator,15.6,Intel Core i7-13700H,16,1024,NVIDIA GeForce RTX 4070,Windows 11,2.15
-HP,Envy 15,Creator,15.6,Intel Core i7-13700H,16,512,NVIDIA GeForce GTX 1660 Ti,Windows 11,2.14
-Lenovo,ThinkPad P53,Creator,15.6,Intel Core i9-13900H,32,1024,NVIDIA Quadro RTX 4000,Windows 11,2.45
-Microsoft,Surface Laptop 4,Creator,15,Intel Core i7-1260P,16,512,Intel Iris Xe,Windows 11,1.54
-Gigabyte,Aero 16,Creator,16,Intel Core i9-13900H,32,2048,NVIDIA GeForce RTX 4080,Windows 11,2.3
-Asus,ZenBook Pro 16X,Creator,16,AMD Ryzen 9 7940HS,16,1024,NVIDIA GeForce RTX 4060,Windows 11,2.1
+Dell,XPS 15,Creator,15.6,Intel Core i7-12700H,16,512,NVIDIA GeForce RTX 3050,Windows 11,1.95,2200
+Apple,MacBook Pro 14,Creator,14.2,Apple M2 Pro,16,1000,NVIDIA GeForce RTX 4050,macOS,1.63,2300
+HP,ZBook Firefly 15,Workstation,15.6,Intel Core i7-1260P,16,1024,NVIDIA GeForce RTX 3050,Windows 11,1.74,2400
+Asus,Vivobook Pro 15,Creator,15.6,AMD Ryzen 9 6900HX,16,512,NVIDIA GeForce RTX 3050,Windows 11,1.85,2000
+Lenovo,ThinkPad P53,Workstation,15.6,Intel Core i7-12800H,32,2048,NVIDIA GeForce RTX 3070,Windows 11,2.38,2500
+Microsoft,Surface Laptop Studio,Creator,14.4,Intel Core i7-1260P,16,1024,NVIDIA GeForce RTX 3050,Windows 11,1.74,2200
+Razer,Blade 15,Creator,15.6,Intel Core i7-12700H,16,512,NVIDIA GeForce RTX 3060,Windows 11,1.95,2300
+MSI,PS65,Creator,15.6,Intel Core i7-1260P,16,1024,NVIDIA GeForce RTX 3050,Windows 11,1.88,2100
+Acer,ConceptD 5,Workstation,15.6,Intel Core i7-12700H,16,1000,NVIDIA GeForce RTX 3070,Windows 11,2.03,2400
+Gigabyte,Aero 15,Creator,15.6,Intel Core i7-1260P,16,512,NVIDIA GeForce RTX 3050,Windows 11,1.85,2000

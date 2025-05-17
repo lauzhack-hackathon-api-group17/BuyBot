@@ -17,6 +17,15 @@ def create_database_if_it_does_not_exist(category: Categories):
         c.execute(f"CREATE TABLE {category.name} {category.string_to_create_database()}")
         c.close()
 
+def convert_prices_to_float(prices: list):
+    listToReturn = []
+    for price in prices:
+        try:
+            listToReturn.append(utils.parse_number_from_string(price))
+        except:
+            pass
+    return listToReturn
+
 
 def create_filter_database_parser(category: Categories) -> list:
     """
@@ -24,7 +33,7 @@ def create_filter_database_parser(category: Categories) -> list:
     has in each column one type of filter for example CPU, GPU etc... depending on category
     :return: the filter we will want to have to match computers with our database
     """
-    with open("database/specs_database.csv", "r") as file:
+    with open("../database/specs_database.csv", "r") as file:
         r = list(csv.reader(file))
         matrix_to_return = []
         #fill the matrix with lists
@@ -34,10 +43,10 @@ def create_filter_database_parser(category: Categories) -> list:
         for i, row in enumerate(r):
             for j, title in enumerate(category.header):
                 if j < len(row):
-                    matrix_to_return[j].append(row[j])
+                    if row[j] not in matrix_to_return[j]:
+                        matrix_to_return[j].append(row[j])
         #convert it to primitive python matrix
         return matrix_to_return
-
 
 
 
@@ -85,6 +94,10 @@ class sql_database_interface:
         self.c.execute(f"SELECT * FROM {self.category.name}")
         #after that the cursor contains rows and we keep only the ones that respect the filters
         print(filter_lists)
+        price_list = convert_prices_to_float(filter_lists[10])
+        min_price = min(price_list)
+        max_price = max(price_list)
+
         for row in self.c:
             assert len(row) == len(filter_lists)
             length_row = len(row)
@@ -92,15 +105,21 @@ class sql_database_interface:
             for i in range(length_row):
                 found_matching_filter = False
                  #skip first two filters
-                for string in filter_lists[i]:
+                #its the price list
+                if i == 10:
+                    try:
+                        parsing = utils.parse_number_from_string(row[i])
+                        if min_price <= parsing and parsing <= max_price:
+                            matched_filters += self.category.filter_weights[10]
+                    except:
+                        continue
+                else:
+                    for string in filter_lists[i]:
 
-                    comparaison = utils.compare_strings(string, row[i]) >= utils.PROBABILITY_THRESHOLD
-                    if comparaison >= PROBABILITY_THRESHOLD and not found_matching_filter:
-                        print()
-                        matched_filters += self.category.filter_weights[i]
-                        found_matching_filter = True
-            print(matched_filters)
-            print(row)
+                        comparaison = utils.compare_strings(string, row[i]) >= utils.PROBABILITY_THRESHOLD
+                        if comparaison >= PROBABILITY_THRESHOLD and not found_matching_filter:
+                            matched_filters += self.category.filter_weights[i]
+                            found_matching_filter = True
             if matched_filters >= utils.FILTER_THRESHOLD:
                 listToReturn.append(row)
 
@@ -113,7 +132,6 @@ class sql_database_interface:
         Close the connection with the database
         """
         self.c.close()
-
 
 
 laptops = sql_database_interface(Categories.LAPTOPS).filter_database()
