@@ -330,7 +330,7 @@ start_index = 0
 total_laptops = process_laptops(start_index)
 
 # Try to click the "Afficher plus" button multiple times
-max_clicks = 3  # Reduced for testing
+max_clicks = 500  # Reduced for testing
 click_count = 0
 
 while click_count < max_clicks:
