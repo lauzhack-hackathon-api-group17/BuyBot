@@ -8,6 +8,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from difflib import SequenceMatcher
 import unicodedata
 import re
+import os
+
 
 def wait_for_page_elements_to_load_by(driver, elementIdentifier, elementValue, seconds):
     try:
@@ -113,3 +115,10 @@ def one_sublist_of_another(list1: list, list2: list) -> float:
                 continue
 
     return True
+
+def parse_number_from_string(string_to_parse: str) -> float:
+    match = re.search(r"[-+]?\d*\.\d+|\d+", string_to_parse)
+    if match:
+        return float(match.group())
+    else:
+        raise ValueError(f"No number found in string: '{string_to_parse}'")

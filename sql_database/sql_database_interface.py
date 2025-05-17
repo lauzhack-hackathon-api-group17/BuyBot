@@ -1,3 +1,4 @@
+import csv
 import sqlite3
 import os
 from unicodedata import category
@@ -38,8 +39,12 @@ class sql_database_interface:
         #add the last one
         entry_to_add += f"'{tuple_values[length_tuple -1].lower()}')"
 
-        self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
-        self.connection.commit()
+        print(entry_to_add)
+        try:
+            self.c.execute(f"INSERT INTO {self.category.name} VALUES {entry_to_add}")
+            self.connection.commit()
+        except:
+            pass
 
     def filter_database(self, filter_lists) -> list:
         """
@@ -50,7 +55,7 @@ class sql_database_interface:
         length_filter_list = len(filter_lists)
         listToReturn = []
         self.c.execute(f"SELECT * FROM {self.category.name}")
-        #after that the cursor contains rows
+        #after that the cursor contains rows and we keep only the ones that respect the filters
         for row in self.c:
             assert len(row) == len(filter_lists)
             length_row = len(row)
@@ -75,3 +80,34 @@ class sql_database_interface:
         Close the connection with the database
         """
         self.c.close()
+
+"""database_interface = sql_database_interface(Categories.LAPTOPS)
+with open("../laptops_data_20250517_081717.csv", "r", encoding="utf-8") as file:
+    r = list(csv.reader(file))
+    for row in r[1:]:
+        database_interface.parse_line(tuple(row))
+"""
+
+"""
+database = sql_database_interface(Categories.LAPTOPS)
+
+
+
+data = database.filter_database([[],[],[],[],[],[],[],[],[],[],[],[]])
+print(data)
+
+"""
+
+"""
+ram_list = set()
+for element in data:
+    ram = element[5]
+    ram_list.add(ram)
+with open("../scraped_lists/LAPTOPS/RAM.csv", "w") as file:
+    writer = csv.writer(file)
+    for ram in list(ram_list):
+        try:
+            writer.writerow([int(utils.parse_number_from_string(ram.lower()))])
+        except:
+            continue
+"""
