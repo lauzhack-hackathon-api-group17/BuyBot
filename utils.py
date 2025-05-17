@@ -1,3 +1,5 @@
+import os
+import csv
 from scipy.optimize import direct
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -8,7 +10,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from difflib import SequenceMatcher
 import unicodedata
 import re
-import os
 
 
 def wait_for_page_elements_to_load_by(driver, elementIdentifier, elementValue, seconds):
@@ -122,3 +123,18 @@ def parse_number_from_string(string_to_parse: str) -> float:
         return float(match.group())
     else:
         raise ValueError(f"No number found in string: '{string_to_parse}'")
+
+
+# Load the components possibilities from CSV files
+def get_possibilities():
+    """Load the possible values for each component from CSV files in the specified directory."""
+    possibilities = {}
+    directory = 'scraped_lists/LAPTOPS'
+    for filename in os.listdir(directory):
+        if filename.endswith('.csv'):
+            key = filename[:-4]  # remove .csv
+            with open(os.path.join(directory, filename), newline='', encoding='utf-8') as csvfile:
+                reader = csv.reader(csvfile)
+                # flatten all rows into a single list
+                values = [item for row in reader for item in row if item]
+                possibilities[key] = values

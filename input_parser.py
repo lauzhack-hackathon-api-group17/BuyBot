@@ -1,12 +1,13 @@
 import os
+import time
 from together import Together
 from constants import PROMPT, USER_INPUTS, LLM_OUTPUTS
 from keys import TOGETHER_AI
+from utils import get_possibilities
 
 # Instantiate the Together client (it will also read TOGETHER_API_KEY from env if not passed)
 client = Together(api_key=TOGETHER_AI)
 N_RECOMMENDATIONS = 10
-
 
 def get_laptop_recommendations(user_input: str) -> str:
     """
@@ -14,8 +15,18 @@ def get_laptop_recommendations(user_input: str) -> str:
     Returns a CSV string following the expected format.
     """
     # 1. Start with the system prompt
+    full_prompt = PROMPT + f"""
+        You are working with a database. Use only the following values for certain fields:
+        Possible field values: {get_possibilities()}
+
+        Note: The current date is {time.strftime('%Y-%m-%d')}.
+        - Some components may have changed in price since your last training data.
+        - Some components may be newly released and not present in your knowledge.
+
+        Please proceed accordingly.
+    """
     messages = [
-        {"role": "system", "content": PROMPT}
+        {"role": "system", "content": full_prompt}
     ]
 
     # 2. Add our example pairs
@@ -38,9 +49,9 @@ def get_laptop_recommendations(user_input: str) -> str:
     return response.choices[0].message.content
 
 
-def create_database(llm_output: str, directory_name: str = "database") -> None:
+def create_database(llm_output: str, directory_name: str = "database", filename = "specs_database.csv") -> None:
     """
-    Converts a CSV-formatted string into a file named 'database.csv' inside a given directory.
+    Converts a CSV-formatted string into a csv file and saves it to a specified directory. 
     
     Args:
         llm_output (str): The raw CSV string from an LLM (should include header).
@@ -50,7 +61,7 @@ def create_database(llm_output: str, directory_name: str = "database") -> None:
     os.makedirs(directory_name, exist_ok=True)
 
     # Define the file path
-    file_path = os.path.join(directory_name, "database.csv")
+    file_path = os.path.join(directory_name, filename)
 
     # Write the CSV content
     with open(file_path, "w", encoding="utf-8") as f:

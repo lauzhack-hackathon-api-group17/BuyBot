@@ -275,7 +275,7 @@ def extract_specs_from_detail_page(driver, product_url):
     
     return extracted_specs
 
-def process_laptops(start_index, min_index_to_process=229):
+def process_laptops(start_index, min_index_to_process=230):
     """
     Process laptops from the given start index.
     
@@ -289,6 +289,9 @@ def process_laptops(start_index, min_index_to_process=229):
         )
         print(f"Found {len(laptop_articles)} laptop articles")
         processed_count = 0
+        
+        # Pour déboguer, affichons les indices et le filtrage
+        print(f"Examining laptops from index {start_index}, processing those >= {min_index_to_process}")
         
         for index, article in enumerate(laptop_articles[start_index:], start=start_index + 1):
             # Skip laptops below the minimum index to process

@@ -11,3 +11,5 @@ torch
 openai
 together
 selenium
+unidecode
+webdriver-manager
